@@ -192,7 +192,8 @@ export default function AdminPage() {
       if (error) throw error;
     } catch (err) {
       console.error('Error de autenticación:', err);
-      setAuthError('Correo o contraseña incorrectos. Verifica tus credenciales.');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NO CONFIGURADO';
+      setAuthError(`${err.message} | URL: ${supabaseUrl.substring(0, 30)}...`);
     } finally {
       setLoggingIn(false);
     }
