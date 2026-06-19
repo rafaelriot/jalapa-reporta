@@ -812,6 +812,7 @@ export default function ReportesClient({ initialReportes = [] }) {
   // Estados de los Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('todos');
   const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroLocalidad, setFiltroLocalidad] = useState('todos');
   const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
   const [filtroFechaFin, setFiltroFechaFin] = useState('');
   const [busqueda, setBusqueda] = useState('');
@@ -834,6 +835,7 @@ export default function ReportesClient({ initialReportes = [] }) {
   const limpiarFiltros = () => {
     setFiltroCategoria('todos');
     setFiltroEstado('todos');
+    setFiltroLocalidad('todos');
     setFiltroFechaInicio('');
     setFiltroFechaFin('');
     setBusqueda('');
@@ -872,6 +874,11 @@ export default function ReportesClient({ initialReportes = [] }) {
     ? (CATEGORIAS[categoriaMasComun] || { label: 'Ninguno', icon: '📋' })
     : { label: 'Ninguno', icon: '📋' };
 
+  // Localidades únicas disponibles en los reportes (para el filtro)
+  const localidadesUnicas = [...new Set(
+    initialReportes.map(r => r.localidades?.nombre).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'es'));
+
   // Filtrado y ordenamiento de los reportes
   const reportesFiltrados = initialReportes
     .filter((report) => {
@@ -904,7 +911,11 @@ export default function ReportesClient({ initialReportes = [] }) {
         }
       }
 
-      return cumpleCategoria && cumpleEstado && cumpleBusqueda && cumpleFecha;
+      // 5. Filtro por Localidad / Comunidad
+      const cumpleLocalidad = filtroLocalidad === 'todos' ||
+        (report.localidades?.nombre || '') === filtroLocalidad;
+
+      return cumpleCategoria && cumpleEstado && cumpleBusqueda && cumpleFecha && cumpleLocalidad;
     })
     .sort((a, b) => {
       // 5. Ordenamiento dinámico en el cliente
@@ -981,7 +992,8 @@ export default function ReportesClient({ initialReportes = [] }) {
   };
 
   const filtrosModificados = filtroCategoria !== 'todos' || 
-                              filtroEstado !== 'todos' || 
+                              filtroEstado !== 'todos' ||
+                              filtroLocalidad !== 'todos' ||
                               filtroFechaInicio !== '' || 
                               filtroFechaFin !== '' || 
                               busqueda !== '' ||
@@ -991,6 +1003,7 @@ export default function ReportesClient({ initialReportes = [] }) {
   let cantFiltrosActivos = 0;
   if (filtroCategoria !== 'todos') cantFiltrosActivos++;
   if (filtroEstado !== 'todos') cantFiltrosActivos++;
+  if (filtroLocalidad !== 'todos') cantFiltrosActivos++;
   if (filtroFechaInicio !== '' || filtroFechaFin !== '') cantFiltrosActivos++;
 
   return (
@@ -1300,6 +1313,28 @@ export default function ReportesClient({ initialReportes = [] }) {
                 </div>
               </div>
 
+            </div>
+
+            {/* Filtro por Comunidad / Localidad */}
+            <div className="space-y-2">
+              <span className="block text-[10px] font-black text-gray-400 uppercase tracking-wider">Comunidad / Localidad:</span>
+              <div className="relative">
+                <select
+                  value={filtroLocalidad}
+                  onChange={(e) => setFiltroLocalidad(e.target.value)}
+                  className="w-full p-3 pr-10 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none text-xs font-bold text-gray-700 bg-gray-50/50 appearance-none cursor-pointer"
+                >
+                  <option value="todos">🌳 Todas las comunidades</option>
+                  {localidadesUnicas.map((loc) => (
+                    <option key={loc} value={loc}>
+                      📍 {loc}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 text-[10px]">
+                  ▼
+                </div>
+              </div>
             </div>
 
             {/* Acciones de Exportar Excel — solo visible para admins del ayuntamiento */}

@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [localidades, setLocalidades] = useState({});
   const [loadingData, setLoadingData] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroLocalidad, setFiltroLocalidad] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
 
   // Estado de edición/actualización de reporte
@@ -263,13 +264,14 @@ export default function AdminPage() {
   // 6. Filtrado y búsqueda
   const reportesFiltrados = reportes.filter(rep => {
     const cumpleEstado = filtroEstado === 'todos' || rep.estado === filtroEstado;
+    const cumpleLocalidad = filtroLocalidad === 'todos' || rep.localidad_id?.toString() === filtroLocalidad;
     const locNombre = localidades[rep.localidad_id] || '';
     const cumpleBusqueda = 
       rep.folio.toString().includes(busqueda) ||
       locNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       rep.categoria.toLowerCase().includes(busqueda.toLowerCase());
 
-    return cumpleEstado && cumpleBusqueda;
+    return cumpleEstado && cumpleLocalidad && cumpleBusqueda;
   });
 
   // Pantalla de Carga de Sesión
@@ -387,6 +389,23 @@ export default function AdminPage() {
               <option value="en_proceso">En Proceso</option>
               <option value="resuelto">Resueltos</option>
               <option value="rechazado">Rechazados</option>
+            </select>
+          </div>
+
+          {/* Selector de Localidad */}
+          <div className="w-full md:w-64 space-y-1">
+            <label className="text-xs font-black text-gray-700 uppercase">Filtrar por localidad:</label>
+            <select
+              value={filtroLocalidad}
+              onChange={(e) => setFiltroLocalidad(e.target.value)}
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none text-sm font-bold text-gray-700 bg-gray-50/50"
+            >
+              <option value="todos">Todas las localidades</option>
+              {Object.entries(localidades).map(([id, nombre]) => (
+                <option key={id} value={id}>
+                  {nombre}
+                </option>
+              ))}
             </select>
           </div>
 
