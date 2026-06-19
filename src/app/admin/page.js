@@ -262,6 +262,33 @@ export default function AdminPage() {
     }
   };
 
+  // Función para eliminar un reporte por completo (incluye dependencias)
+  const handleDeleteReporte = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar este reporte de forma permanente? Esta acción borrará también todos los comentarios asociados y no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      // Eliminar dependencias manualmente para evitar fallos de clave foránea si no hay CASCADE
+      await supabase.from('comentarios').delete().eq('reporte_id', id);
+      await supabase.from('suscripciones_push').delete().eq('reporte_id', id);
+
+      const { error } = await supabase
+        .from('reportes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Actualizar el estado local
+      setReportes(prev => prev.filter(rep => rep.id !== id));
+      alert('Reporte eliminado correctamente.');
+    } catch (err) {
+      console.error('Error al eliminar reporte:', err);
+      alert(`Error al eliminar el reporte: ${err.message || 'Error desconocido'}`);
+    }
+  };
+
   // 6. Filtrado y búsqueda
   const reportesFiltrados = reportes.filter(rep => {
     const cumpleEstado = filtroEstado === 'todos' || rep.estado === filtroEstado;
@@ -475,6 +502,7 @@ export default function AdminPage() {
               onSave={handleUpdateReporte}
               onVerFoto={setFotoAmpliada}
               userSession={session}
+              onDelete={handleDeleteReporte}
             />
           ))}
         </div>
@@ -511,7 +539,7 @@ export default function AdminPage() {
 }
 
 // Subcomponente de Tarjeta de Edición Individual (mantiene su propio estado de edición de respuesta colapsable)
-function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, onVerFoto, userSession }) {
+function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, onVerFoto, userSession, onDelete }) {
   const [estado, setEstado] = useState(report.estado);
   const [respuesta, setRespuesta] = useState(report.respuesta_ayuntamiento || '');
   const [expandido, setExpandido] = useState(false);
@@ -703,19 +731,30 @@ function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, on
                     )}
                   </div>
 
-                  {/* Botón guardar */}
-                  <button
-                    type="button"
-                    disabled={isUpdating || (estado === report.estado && respuesta === (report.respuesta_ayuntamiento || ''))}
-                    onClick={() => onSave(report.id, estado, respuesta)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black text-white shadow-md transition-all active:scale-95 ${
-                      isUpdating || (estado === report.estado && respuesta === (report.respuesta_ayuntamiento || ''))
-                        ? 'bg-gray-300 shadow-none cursor-not-allowed text-gray-500'
-                        : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-50'
-                    }`}
-                  >
-                    {isUpdating ? 'Guardando...' : 'Guardar Cambios ✓'}
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Botón Eliminar Reporte */}
+                    <button
+                      type="button"
+                      onClick={() => onDelete && onDelete(report.id)}
+                      className="px-4 py-2 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-100 transition-all active:scale-95 flex items-center gap-1.5"
+                    >
+                      <span>🗑️</span> Eliminar Reporte
+                    </button>
+
+                    {/* Botón guardar */}
+                    <button
+                      type="button"
+                      disabled={isUpdating || (estado === report.estado && respuesta === (report.respuesta_ayuntamiento || ''))}
+                      onClick={() => onSave(report.id, estado, respuesta)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black text-white shadow-md transition-all active:scale-95 ${
+                        isUpdating || (estado === report.estado && respuesta === (report.respuesta_ayuntamiento || ''))
+                          ? 'bg-gray-300 shadow-none cursor-not-allowed text-gray-500'
+                          : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-50'
+                      }`}
+                    >
+                      {isUpdating ? 'Guardando...' : 'Guardar Cambios ✓'}
+                    </button>
+                  </div>
 
                 </div>
 
