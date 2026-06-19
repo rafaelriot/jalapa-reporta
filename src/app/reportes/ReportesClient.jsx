@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { suscribirAPush, estaSuscrito } from '@/utils/push';
 import { supabase } from '@/lib/supabaseClient';
 import ComentariosSection from '@/components/ComentariosSection';
+import dynamic from 'next/dynamic';
+const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
 const ESTADOS = {
   pendiente: { label: 'Pendiente', bg: 'bg-amber-100 text-amber-900 border-amber-300' },
@@ -547,6 +549,20 @@ export default function ReportesClient({ initialReportes = [] }) {
   const [orden, setOrden] = useState('recientes'); // 'recientes' (más nuevos), 'antiguos' (más antiguos)
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false);
+  const [vista, setVista] = useState('lista'); // 'lista' o 'mapa'
+
+  // Escuchar el evento del mapa para ver los detalles del reporte
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleFocusReporte = (e) => {
+        const folio = e.detail;
+        setBusqueda(folio);
+        setVista('lista');
+      };
+      window.addEventListener('focus-reporte', handleFocusReporte);
+      return () => window.removeEventListener('focus-reporte', handleFocusReporte);
+    }
+  }, []);
 
   // Leer parámetro 'folio' de la URL para pre-filtrar la búsqueda al cargar la página (Punto 5)
   useEffect(() => {
@@ -1088,6 +1104,34 @@ export default function ReportesClient({ initialReportes = [] }) {
 
       </div>
 
+      {/* Selector de Vista (Lista / Mapa) */}
+      <div className="flex justify-end mb-4">
+        <div className="bg-gray-100 p-1 rounded-xl flex gap-1 w-52 h-[41px] items-center border border-gray-200/40 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setVista('lista')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+              vista === 'lista'
+                ? 'bg-white text-gray-950 shadow-sm border border-gray-200/50'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📋 Lista
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista('mapa')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+              vista === 'mapa'
+                ? 'bg-white text-gray-950 shadow-sm border border-gray-200/50'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🗺️ Mapa
+          </button>
+        </div>
+      </div>
+
       {/* Resultados de la búsqueda */}
       {reportesFiltrados.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-md">
@@ -1095,6 +1139,8 @@ export default function ReportesClient({ initialReportes = [] }) {
           <h3 className="text-lg font-bold text-gray-800 mt-4">No se encontraron reportes</h3>
           <p className="text-gray-500 text-sm mt-1">Prueba cambiando tus filtros de búsqueda arriba.</p>
         </div>
+      ) : vista === 'mapa' ? (
+        <MapComponent reportes={reportesFiltrados} />
       ) : (
         <div className="space-y-6">
           {reportesFiltrados.map((report) => (
