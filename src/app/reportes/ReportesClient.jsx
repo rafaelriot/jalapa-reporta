@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import ComentariosSection from '@/components/ComentariosSection';
 import dynamic from 'next/dynamic';
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
+import StatsDashboard from '@/components/StatsDashboard';
 
 const ESTADOS = {
   pendiente: { label: 'Pendiente', bg: 'bg-amber-100 text-amber-900 border-amber-300' },
@@ -550,6 +551,7 @@ export default function ReportesClient({ initialReportes = [] }) {
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false);
   const [vista, setVista] = useState('lista'); // 'lista' o 'mapa'
+  const [mostrarGraficas, setMostrarGraficas] = useState(false);
 
   // Escuchar el evento del mapa para ver los detalles del reporte
   useEffect(() => {
@@ -864,6 +866,24 @@ export default function ReportesClient({ initialReportes = [] }) {
         </div>
 
       </div>
+
+      {/* Botón para alternar Gráficos y Métricas */}
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => setMostrarGraficas(!mostrarGraficas)}
+          className="w-full py-3 px-4 border border-emerald-250 rounded-2xl text-xs font-black text-emerald-700 bg-emerald-50/20 hover:bg-emerald-50/50 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-emerald-50/50"
+        >
+          <span>{mostrarGraficas ? '📈 Ocultar Gráficas y Métricas' : '📈 Mostrar Gráficas y Métricas'}</span>
+        </button>
+      </div>
+
+      {/* Panel de Gráficas y Métricas */}
+      {mostrarGraficas && (
+        <div className="mb-6">
+          <StatsDashboard reportes={reportesFiltrados} />
+        </div>
+      )}
 
       {/* Panel de Filtros Interactivos Visuales */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-md mb-6 space-y-5">
