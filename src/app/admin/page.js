@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import ComentariosSection from '@/components/ComentariosSection';
 
 const ESTADOS = [
   { id: 'pendiente', label: 'Pendiente', color: 'bg-amber-100 text-amber-900 border-amber-300' },
@@ -164,7 +165,7 @@ export default function AdminPage() {
       // Obtener reportes
       const { data: repData, error: repError } = await supabase
         .from('reportes')
-        .select('*')
+        .select('*, comentarios(count)')
         .order('creado_at', { ascending: false });
 
       if (repError) throw repError;
@@ -473,6 +474,7 @@ export default function AdminPage() {
               mensaje={mensajeUpdate.id === report.id ? mensajeUpdate : null}
               onSave={handleUpdateReporte}
               onVerFoto={setFotoAmpliada}
+              userSession={session}
             />
           ))}
         </div>
@@ -509,15 +511,17 @@ export default function AdminPage() {
 }
 
 // Subcomponente de Tarjeta de Edición Individual (mantiene su propio estado de edición de respuesta colapsable)
-function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, onVerFoto }) {
+function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, onVerFoto, userSession }) {
   const [estado, setEstado] = useState(report.estado);
   const [respuesta, setRespuesta] = useState(report.respuesta_ayuntamiento || '');
   const [expandido, setExpandido] = useState(false);
+  const [comentariosCount, setComentariosCount] = useState(report.comentarios?.[0]?.count || 0);
 
   // Sincronizar estados locales si la data cambia desde el servidor
   useEffect(() => {
     setEstado(report.estado);
     setRespuesta(report.respuesta_ayuntamiento || '');
+    setComentariosCount(report.comentarios?.[0]?.count || 0);
   }, [report]);
 
   const catEmoji = {
@@ -579,6 +583,14 @@ function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, on
             <span className="text-blue-600">🏘️ {localidades[report.localidad_id] || 'Cargando comunidad...'}</span>
             <span>•</span>
             <span>📅 {fecha}</span>
+            {comentariosCount > 0 && (
+              <>
+                <span>•</span>
+                <span className="text-indigo-650 bg-indigo-50/70 border border-indigo-100 rounded-lg px-2 py-0.5 text-[10px] font-black flex items-center gap-0.5" title={`${comentariosCount} comentarios`}>
+                  💬 {comentariosCount}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Detalles colapsables */}
@@ -708,6 +720,14 @@ function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, on
                 </div>
 
               </div>
+
+              {/* Sección de Comentarios de la comunidad en el panel Admin */}
+              <ComentariosSection
+                reporteId={report.id}
+                userSession={userSession}
+                onLogin={null}
+                onCountChange={setComentariosCount}
+              />
             </div>
           )}
 
