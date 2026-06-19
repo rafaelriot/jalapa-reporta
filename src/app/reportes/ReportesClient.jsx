@@ -1159,33 +1159,36 @@ export default function ReportesClient({ initialReportes = [] }) {
 
             </div>
 
-            {/* Acciones del Reporte Excel */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => exportarAExcel(reportesFiltrados, 'reportes_filtrados')}
-                disabled={reportesFiltrados.length === 0}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 border ${
-                  reportesFiltrados.length === 0
-                    ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed shadow-none'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-md shadow-emerald-50'
-                }`}
-              >
-                <span>📊</span> Descargar Excel (Filtrados)
-              </button>
-              <button
-                type="button"
-                onClick={() => exportarAExcel(initialReportes, 'todos_los_reportes')}
-                disabled={initialReportes.length === 0}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 border ${
-                  initialReportes.length === 0
-                    ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed shadow-none'
-                    : 'bg-emerald-750 hover:bg-emerald-800 text-white border-emerald-800 shadow-md shadow-emerald-50'
-                }`}
-              >
-                <span>📥</span> Descargar Excel (Todos)
-              </button>
-            </div>
+            {/* Acciones de Exportar Excel — solo visible para admins del ayuntamiento */}
+            {userSession?.user?.email?.endsWith('@jalapa.gob.mx') && (
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
+                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1">🔐 Admin:</span>
+                <button
+                  type="button"
+                  onClick={() => exportarAExcel(reportesFiltrados, 'reportes_filtrados')}
+                  disabled={reportesFiltrados.length === 0}
+                  className={`px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 border ${
+                    reportesFiltrados.length === 0
+                      ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed shadow-none'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-md shadow-emerald-50'
+                  }`}
+                >
+                  <span>📊</span> Descargar Excel (Filtrados)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportarAExcel(initialReportes, 'todos_los_reportes')}
+                  disabled={initialReportes.length === 0}
+                  className={`px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 border ${
+                    initialReportes.length === 0
+                      ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed shadow-none'
+                      : 'bg-emerald-750 hover:bg-emerald-800 text-white border-emerald-800 shadow-md shadow-emerald-50'
+                  }`}
+                >
+                  <span>📥</span> Descargar Excel (Todos)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
