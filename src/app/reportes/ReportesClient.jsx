@@ -26,6 +26,7 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin }) {
   const [expandido, setExpandido] = useState(false);
   const [suscritoPush, setSuscritoPush] = useState(false);
   const [suscribiendoPush, setSuscribiendoPush] = useState(false);
+  const [comentariosCount, setComentariosCount] = useState(report.comentarios?.[0]?.count ?? 0);
 
   useEffect(() => {
     if (report.id) {
@@ -354,6 +355,14 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin }) {
             <span>📅 {fecha}</span>
             <span>•</span>
             <span className="text-gray-400">Folio: #{report.folio}</span>
+            {comentariosCount > 0 && (
+              <>
+                <span>•</span>
+                <span className="text-blue-500 flex items-center gap-0.5 font-black">
+                  💬 {comentariosCount}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Detalles colapsables */}
@@ -475,6 +484,7 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin }) {
                 reporteId={report.id}
                 userSession={userSession}
                 onLogin={onLogin}
+                onCountChange={setComentariosCount}
               />
             </div>
           )}
@@ -503,7 +513,7 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin }) {
 }
 
 // ─── Componente de Comentarios con Google OAuth ───────────────────────────────
-function ComentariosSection({ reporteId, userSession, onLogin }) {
+function ComentariosSection({ reporteId, userSession, onLogin, onCountChange }) {
   const [comentarios, setComentarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [texto, setTexto] = useState('');
@@ -515,6 +525,11 @@ function ComentariosSection({ reporteId, userSession, onLogin }) {
 
   const esAdmin = userSession?.user?.email?.endsWith('@jalapa.gob.mx');
   const userId = userSession?.user?.id;
+
+  // Sincronizar conteo con el padre (ReporteCard) cuando cambie
+  useEffect(() => {
+    if (!cargando && onCountChange) onCountChange(comentarios.length);
+  }, [comentarios.length, cargando]);
 
   useEffect(() => {
     if (!reporteId) return;

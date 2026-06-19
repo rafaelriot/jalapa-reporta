@@ -7,7 +7,7 @@ async function getReportes() {
   try {
     const { data, error } = await supabase
       .from('reportes')
-      .select('*, localidades(nombre)')
+      .select('*, localidades(nombre), comentarios(count)')
       .order('creado_at', { ascending: false });
 
     if (error) {
