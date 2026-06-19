@@ -29,6 +29,8 @@ export default function AdminPage() {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroLocalidad, setFiltroLocalidad] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
+  const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
+  const [filtroFechaFin, setFiltroFechaFin] = useState('');
 
   // Estado de edición/actualización de reporte
   const [actualizandoId, setActualizandoId] = useState(null);
@@ -294,6 +296,8 @@ export default function AdminPage() {
     }
   };
 
+  const fechaRangoValido = !filtroFechaInicio || !filtroFechaFin || (filtroFechaInicio <= filtroFechaFin);
+
   // 6. Filtrado y búsqueda
   const reportesFiltrados = reportes.filter(rep => {
     const cumpleEstado = filtroEstado === 'todos' || rep.estado === filtroEstado;
@@ -304,7 +308,23 @@ export default function AdminPage() {
       locNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       rep.categoria.toLowerCase().includes(busqueda.toLowerCase());
 
-    return cumpleEstado && cumpleLocalidad && cumpleBusqueda;
+    let cumpleFecha = true;
+    if (fechaRangoValido && (filtroFechaInicio || filtroFechaFin)) {
+      const dateObj = new Date(rep.creado_at);
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const fechaReporte = `${year}-${month}-${day}`;
+
+      if (filtroFechaInicio && fechaReporte < filtroFechaInicio) {
+        cumpleFecha = false;
+      }
+      if (filtroFechaFin && fechaReporte > filtroFechaFin) {
+        cumpleFecha = false;
+      }
+    }
+
+    return cumpleEstado && cumpleLocalidad && cumpleBusqueda && cumpleFecha;
   });
 
   // Pantalla de Carga de Sesión
@@ -450,6 +470,51 @@ export default function AdminPage() {
           >
             {loadingData ? '🔄' : 'Recargar ⟳'}
           </button>
+        </div>
+
+        {/* Fila 2: Filtro por Fechas */}
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full pt-4 border-t border-gray-100">
+          <div className="flex-1 space-y-1 w-full">
+            <span className="text-xs font-black text-gray-700 uppercase block">Rango de fecha de creación:</span>
+            <div className="flex items-center gap-2">
+              <input 
+                type="date"
+                value={filtroFechaInicio}
+                max={filtroFechaFin || undefined}
+                onChange={(e) => setFiltroFechaInicio(e.target.value)}
+                className={`w-full p-2.5 border-2 rounded-xl focus:border-blue-500 outline-none text-xs font-semibold ${
+                  !fechaRangoValido ? 'border-rose-300 bg-rose-50/55' : 'border-gray-200 bg-gray-50/50'
+                }`}
+              />
+              <span className="text-gray-400 text-xs font-bold">a</span>
+              <input 
+                type="date"
+                value={filtroFechaFin}
+                min={filtroFechaInicio || undefined}
+                onChange={(e) => setFiltroFechaFin(e.target.value)}
+                className={`w-full p-2.5 border-2 rounded-xl focus:border-blue-500 outline-none text-xs font-semibold ${
+                  !fechaRangoValido ? 'border-rose-300 bg-rose-50/55' : 'border-gray-200 bg-gray-50/50'
+                }`}
+              />
+            </div>
+            
+            {/* Mensaje de Error de Rango de Fecha */}
+            {!fechaRangoValido && (
+              <div className="text-[11px] text-rose-700 font-black bg-rose-50 border border-rose-100 p-2 rounded-lg flex items-center gap-1">
+                <span>⚠️</span> La fecha de inicio debe ser menor o igual a la fecha final.
+              </div>
+            )}
+          </div>
+
+          {/* Botón para Limpiar Filtros de Fechas */}
+          {(filtroFechaInicio || filtroFechaFin) && (
+            <button
+              onClick={() => { setFiltroFechaInicio(''); setFiltroFechaFin(''); }}
+              className="md:self-end py-2.5 px-4 border border-rose-200 text-rose-700 hover:bg-rose-50 active:scale-95 rounded-xl font-bold text-xs transition-all w-full md:w-auto h-[42px]"
+            >
+              Limpiar Fechas ✕
+            </button>
+          )}
         </div>
 
         {/* Acciones del Reporte Excel en el Admin */}
