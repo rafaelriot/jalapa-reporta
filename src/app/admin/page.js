@@ -562,7 +562,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={confirmarEliminar}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-black text-white bg-rose-650 hover:bg-rose-700 shadow-md shadow-rose-100 active:scale-95 transition-all"
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-100 active:scale-95 transition-all"
               >
                 Sí, eliminar
               </button>
