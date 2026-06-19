@@ -466,17 +466,6 @@ export default function AdminPage() {
             >
               <span>📊</span> Descargar Excel (Filtrados)
             </button>
-            <button
-              onClick={() => exportarAExcel(reportes, 'todos_los_reportes_admin')}
-              disabled={reportes.length === 0}
-              className={`px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 border ${
-                reportes.length === 0
-                  ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed shadow-none'
-                  : 'bg-emerald-750 hover:bg-emerald-800 text-white border-emerald-800 shadow-md shadow-emerald-50'
-              }`}
-            >
-              <span>📥</span> Descargar Excel (Todos)
-            </button>
           </div>
 
           <div className="text-xs text-gray-400 font-bold">

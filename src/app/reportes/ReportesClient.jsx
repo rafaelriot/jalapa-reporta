@@ -809,7 +809,7 @@ export default function ReportesClient({ initialReportes = [] }) {
         {/* Tarjeta 2: Tasa de Resolución */}
         <div className="bg-gradient-to-br from-emerald-50/60 to-teal-50/60 border border-emerald-100 rounded-2xl p-4.5 shadow-sm transition-all duration-200 hover:scale-[1.02] flex flex-col justify-between min-h-[105px]">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black text-emerald-750 uppercase tracking-wider">Resueltos</span>
+            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">Resueltos</span>
             <span className="text-lg filter drop-shadow-xs">✅</span>
           </div>
           <div>
@@ -1080,18 +1080,6 @@ export default function ReportesClient({ initialReportes = [] }) {
                   }`}
                 >
                   <span>📊</span> Descargar Excel (Filtrados)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => exportarAExcel(initialReportes, 'todos_los_reportes')}
-                  disabled={initialReportes.length === 0}
-                  className={`px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 border ${
-                    initialReportes.length === 0
-                      ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed shadow-none'
-                      : 'bg-emerald-750 hover:bg-emerald-800 text-white border-emerald-800 shadow-md shadow-emerald-50'
-                  }`}
-                >
-                  <span>📥</span> Descargar Excel (Todos)
                 </button>
               </div>
             )}
