@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [actualizandoId, setActualizandoId] = useState(null);
   const [mensajeUpdate, setMensajeUpdate] = useState({ id: null, tipo: '', texto: '' });
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
+  const [reporteAEliminar, setReporteAEliminar] = useState(null);
 
   // Función para exportar a Excel (CSV con UTF-8 BOM)
   const exportarAExcel = (listado, nombreArchivo) => {
@@ -262,11 +263,16 @@ export default function AdminPage() {
     }
   };
 
-  // Función para eliminar un reporte por completo (incluye dependencias)
-  const handleDeleteReporte = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar este reporte de forma permanente? Esta acción borrará también todos los comentarios asociados y no se puede deshacer.')) {
-      return;
-    }
+  // Función para iniciar la eliminación de un reporte (muestra el modal de confirmación personalizado)
+  const handleDeleteReporte = (id) => {
+    setReporteAEliminar(id);
+  };
+
+  // Función para confirmar y ejecutar la eliminación definitiva
+  const confirmarEliminar = async () => {
+    if (!reporteAEliminar) return;
+    const id = reporteAEliminar;
+    setReporteAEliminar(null); // Cerrar modal
 
     try {
       // Eliminar dependencias manualmente para evitar fallos de clave foránea si no hay CASCADE
@@ -282,7 +288,6 @@ export default function AdminPage() {
 
       // Actualizar el estado local
       setReportes(prev => prev.filter(rep => rep.id !== id));
-      alert('Reporte eliminado correctamente.');
     } catch (err) {
       console.error('Error al eliminar reporte:', err);
       alert(`Error al eliminar el reporte: ${err.message || 'Error desconocido'}`);
@@ -530,6 +535,38 @@ export default function AdminPage() {
               alt="Visualización completa del reporte" 
               className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10"
             />
+          </div>
+        </div>
+      )}
+      {/* Modal de Confirmación de Eliminación Personalizado */}
+      {reporteAEliminar && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl border border-gray-150 p-6 shadow-2xl max-w-sm w-full space-y-5 text-center transform scale-100 transition-all duration-250">
+            <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-2xl text-rose-500">
+              ⚠️
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-gray-900">¿Eliminar Reporte?</h3>
+              <p className="text-xs text-gray-500 font-semibold leading-relaxed">
+                ¿Estás seguro de eliminar este reporte de forma permanente? Esta acción borrará también todos los comentarios asociados y no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setReporteAEliminar(null)}
+                className="flex-1 py-3 px-4 border-2 border-gray-200 rounded-xl text-xs font-black text-gray-650 bg-gray-50/50 hover:bg-gray-100 active:scale-95 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmarEliminar}
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-black text-white bg-rose-650 hover:bg-rose-700 shadow-md shadow-rose-100 active:scale-95 transition-all"
+              >
+                Sí, eliminar
+              </button>
+            </div>
           </div>
         </div>
       )}
