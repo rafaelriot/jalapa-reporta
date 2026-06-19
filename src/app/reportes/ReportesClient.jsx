@@ -509,6 +509,12 @@ function ComentariosSection({ reporteId, userSession, onLogin }) {
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [editandoId, setEditandoId] = useState(null);
+  const [textoEdicion, setTextoEdicion] = useState('');
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+
+  const esAdmin = userSession?.user?.email?.endsWith('@jalapa.gob.mx');
+  const userId = userSession?.user?.id;
 
   useEffect(() => {
     if (!reporteId) return;
@@ -516,7 +522,7 @@ function ComentariosSection({ reporteId, userSession, onLogin }) {
       setCargando(true);
       const { data } = await supabase
         .from('comentarios')
-        .select('id, user_name, user_avatar, contenido, creado_at')
+        .select('id, user_id, user_name, user_avatar, contenido, creado_at')
         .eq('reporte_id', reporteId)
         .order('creado_at', { ascending: true });
       setComentarios(data || []);
@@ -539,7 +545,7 @@ function ComentariosSection({ reporteId, userSession, onLogin }) {
         user_avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
         contenido: texto.trim()
       })
-      .select('id, user_name, user_avatar, contenido, creado_at')
+      .select('id, user_id, user_name, user_avatar, contenido, creado_at')
       .single();
     if (!error && data) {
       setComentarios(prev => [...prev, data]);
@@ -548,6 +554,47 @@ function ComentariosSection({ reporteId, userSession, onLogin }) {
       setErrorMsg('No se pudo enviar el comentario. Intenta de nuevo.');
     }
     setEnviando(false);
+  };
+
+  const iniciarEdicion = (c) => {
+    setEditandoId(c.id);
+    setTextoEdicion(c.contenido);
+    setErrorMsg('');
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoId(null);
+    setTextoEdicion('');
+  };
+
+  const guardarEdicion = async () => {
+    if (!textoEdicion.trim() || !editandoId || guardandoEdicion) return;
+    setGuardandoEdicion(true);
+    setErrorMsg('');
+    const { data, error } = await supabase
+      .from('comentarios')
+      .update({ contenido: textoEdicion.trim() })
+      .eq('id', editandoId)
+      .select('id, user_id, user_name, user_avatar, contenido, creado_at')
+      .single();
+    if (!error && data) {
+      setComentarios(prev => prev.map(c => c.id === editandoId ? data : c));
+      setEditandoId(null);
+      setTextoEdicion('');
+    } else {
+      setErrorMsg('No se pudo guardar la edición. Intenta de nuevo.');
+    }
+    setGuardandoEdicion(false);
+  };
+
+  const eliminarComentario = async (id) => {
+    if (!window.confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) return;
+    const { error } = await supabase.from('comentarios').delete().eq('id', id);
+    if (!error) {
+      setComentarios(prev => prev.filter(c => c.id !== id));
+    } else {
+      setErrorMsg('No se pudo eliminar el comentario. Intenta de nuevo.');
+    }
   };
 
   const GOOGLE_SVG = (
@@ -577,21 +624,102 @@ function ComentariosSection({ reporteId, userSession, onLogin }) {
       ) : comentarios.length === 0 ? (
         <p className="text-xs text-gray-400 font-semibold italic">Aún no hay comentarios. ¡Sé el primero!</p>
       ) : (
-        <div className="space-y-2.5 max-h-56 overflow-y-auto pr-0.5">
-          {comentarios.map(c => (
-            <div key={c.id} className="flex items-start gap-2">
-              {avatar(c.user_name, c.user_avatar)}
-              <div className="flex-1 bg-gray-50/80 rounded-xl px-3 py-2 border border-gray-100">
-                <div className="flex items-baseline justify-between gap-1 flex-wrap mb-0.5">
-                  <span className="text-[11px] font-black text-gray-700 truncate">{c.user_name}</span>
-                  <span className="text-[9px] text-gray-400 font-semibold shrink-0">
-                    {new Date(c.creado_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </span>
+        <div className="space-y-2.5 max-h-64 overflow-y-auto pr-0.5">
+          {comentarios.map(c => {
+            const esMio = userId && c.user_id === userId;
+            const puedeEditar = esMio;
+            const puedeBorrar = esMio || esAdmin;
+            const estandoEditando = editandoId === c.id;
+
+            return (
+              <div key={c.id} className="flex items-start gap-2 group">
+                {avatar(c.user_name, c.user_avatar)}
+                <div className="flex-1 min-w-0">
+                  {estandoEditando ? (
+                    /* Modo edición inline */
+                    <div className="bg-blue-50 rounded-xl px-3 py-2 border-2 border-blue-200">
+                      <textarea
+                        value={textoEdicion}
+                        onChange={e => setTextoEdicion(e.target.value.slice(0, 500))}
+                        rows={2}
+                        autoFocus
+                        className="w-full bg-transparent outline-none text-xs font-semibold text-gray-700 resize-none placeholder-gray-400"
+                        onKeyDown={e => { if (e.key === 'Escape') cancelarEdicion(); }}
+                      />
+                      <div className="flex items-center justify-between mt-1">
+                        <span className={`text-[9px] font-bold ${textoEdicion.length > 450 ? 'text-amber-500' : 'text-gray-400'}`}>
+                          {textoEdicion.length}/500
+                        </span>
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={cancelarEdicion}
+                            className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-[10px] font-black transition-all active:scale-95"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={guardarEdicion}
+                            disabled={!textoEdicion.trim() || guardandoEdicion}
+                            className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black disabled:opacity-40 transition-all active:scale-95"
+                          >
+                            {guardandoEdicion ? '⏳' : '✅ Guardar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Modo visualización */
+                    <div className="flex-1 bg-gray-50/80 rounded-xl px-3 py-2 border border-gray-100 relative">
+                      <div className="flex items-baseline justify-between gap-1 flex-wrap mb-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-black text-gray-700 truncate">{c.user_name}</span>
+                          {esAdmin && !esMio && (
+                            <span className="text-[8px] bg-amber-100 text-amber-700 font-black px-1 rounded uppercase tracking-wide">otro</span>
+                          )}
+                          {esMio && (
+                            <span className="text-[8px] bg-blue-100 text-blue-700 font-black px-1 rounded uppercase tracking-wide">tú</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[9px] text-gray-400 font-semibold">
+                            {new Date(c.creado_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {/* Botones acción — aparecen al pasar el mouse */}
+                          {(puedeEditar || puedeBorrar) && (
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {puedeEditar && (
+                                <button
+                                  type="button"
+                                  onClick={() => iniciarEdicion(c)}
+                                  title="Editar comentario"
+                                  className="w-5 h-5 flex items-center justify-center rounded bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] transition-all active:scale-95"
+                                >
+                                  ✏️
+                                </button>
+                              )}
+                              {puedeBorrar && (
+                                <button
+                                  type="button"
+                                  onClick={() => eliminarComentario(c.id)}
+                                  title={esAdmin && !esMio ? 'Eliminar como admin' : 'Eliminar comentario'}
+                                  className="w-5 h-5 flex items-center justify-center rounded bg-rose-50 hover:bg-rose-100 text-rose-500 text-[10px] transition-all active:scale-95"
+                                >
+                                  🗑️
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">{c.contenido}</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-gray-600 font-medium leading-relaxed">{c.contenido}</p>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
