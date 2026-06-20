@@ -354,6 +354,24 @@ export default function ReportForm({ localidades = [] }) {
           coordenadas: coordenadasStr
         };
 
+        // Guardar en Mis Reportes localmente
+        if (typeof window !== 'undefined') {
+          try {
+            const listado = JSON.parse(localStorage.getItem('mis_reportes') || '[]');
+            if (!listado.some(item => item.id === data?.id)) {
+              listado.push({
+                id: data?.id,
+                folio: folioGenerado,
+                categoria: categoria,
+                creado_at: reportData.creado_at
+              });
+              localStorage.setItem('mis_reportes', JSON.stringify(listado));
+            }
+          } catch (e) {
+            console.error('Error al guardar en mis_reportes:', e);
+          }
+        }
+
         resetForm();
         setReporteExitoso(reporteDetalle);
         setMensajeStatus({ tipo: 'success', texto: `¡Muchas gracias! Tu reporte ha sido registrado con éxito con el folio #${folioGenerado}. 🇲🇽` });
@@ -474,12 +492,32 @@ export default function ReportForm({ localidades = [] }) {
           // Eliminar fotos/audios temporales en base64 del objeto
           const { foto_base64, audio_base64, pendingSync, ...cleanReport } = report;
 
-          // Insertar reporte en la DB
-          const { error: dbError } = await supabase
+          // Insertar reporte en la DB y obtener folio generado
+          const { data: syncData, error: dbError } = await supabase
             .from('reportes')
-            .insert([{ ...cleanReport, foto_url: publicUrl, audio_url: publicAudioUrl }]);
+            .insert([{ ...cleanReport, foto_url: publicUrl, audio_url: publicAudioUrl }])
+            .select('id, folio')
+            .single();
 
           if (dbError) throw dbError;
+
+          // Guardar reporte sincronizado en Mis Reportes localmente
+          if (syncData && typeof window !== 'undefined') {
+            try {
+              const listado = JSON.parse(localStorage.getItem('mis_reportes') || '[]');
+              if (!listado.some(item => item.id === syncData.id)) {
+                listado.push({
+                  id: syncData.id,
+                  folio: syncData.folio,
+                  categoria: cleanReport.categoria,
+                  creado_at: cleanReport.creado_at
+                });
+                localStorage.setItem('mis_reportes', JSON.stringify(listado));
+              }
+            } catch (e) {
+              console.error('Error al guardar reporte sincronizado en mis_reportes:', e);
+            }
+          }
 
           // Borrar de IndexedDB
           await deleteOfflineReport(report.id);

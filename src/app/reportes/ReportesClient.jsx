@@ -26,7 +26,7 @@ const CATEGORIAS = {
   otro: { label: 'Otro Problema', icon: '📋' },
 };
 
-function ReporteCard({ report, onAmpliarFoto, userSession, onLogin }) {
+function ReporteCard({ report, onAmpliarFoto, userSession, onLogin, esPropio }) {
   const [expandido, setExpandido] = useState(false);
   const [suscritoPush, setSuscritoPush] = useState(false);
   const [suscribiendoPush, setSuscribiendoPush] = useState(false);
@@ -347,9 +347,16 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin }) {
             <span className="text-lg font-extrabold text-gray-900 flex items-center gap-1">
               <span>{cat.icon}</span> {cat.label}
             </span>
-            <span className={`px-3 py-1 rounded-full text-xs font-black border ${est.bg}`}>
-              {est.label}
-            </span>
+            <div className="flex items-center gap-2">
+              {esPropio && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-0.5 shadow-sm">
+                  ⭐ Creado por mí
+                </span>
+              )}
+              <span className={`px-3 py-1 rounded-full text-xs font-black border ${est.bg}`}>
+                {est.label}
+              </span>
+            </div>
           </div>
 
           {/* Localidad y Fecha */}
@@ -553,6 +560,23 @@ export default function ReportesClient({ initialReportes = [] }) {
   const [vista, setVista] = useState('lista'); // 'lista' o 'mapa'
   const [mostrarGraficas, setMostrarGraficas] = useState(false);
 
+  // Estados de "Mis Reportes"
+  const [soloMisReportes, setSoloMisReportes] = useState(false);
+  const [misReportesIds, setMisReportesIds] = useState([]);
+
+  // Cargar mis reportes desde localStorage en el cliente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const listado = JSON.parse(localStorage.getItem('mis_reportes') || '[]');
+        const ids = listado.map(item => item.id).filter(Boolean);
+        setMisReportesIds(ids);
+      } catch (e) {
+        console.error('Error al leer mis_reportes de localStorage:', e);
+      }
+    }
+  }, []);
+
   // Escuchar el evento del mapa para ver los detalles del reporte
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -586,6 +610,7 @@ export default function ReportesClient({ initialReportes = [] }) {
     setFiltroFechaFin('');
     setBusqueda('');
     setOrden('recientes');
+    setSoloMisReportes(false);
   };
 
   // Validar si el rango de fechas es lógico
@@ -628,6 +653,9 @@ export default function ReportesClient({ initialReportes = [] }) {
   // Filtrado y ordenamiento de los reportes
   const reportesFiltrados = initialReportes
     .filter((report) => {
+      // 0. Filtro por Mis Reportes (creados desde el dispositivo)
+      const cumpleSoloMisReportes = !soloMisReportes || misReportesIds.includes(report.id);
+
       // 1. Filtro por Categoría
       const cumpleCategoria = filtroCategoria === 'todos' || report.categoria === filtroCategoria;
 
@@ -661,7 +689,7 @@ export default function ReportesClient({ initialReportes = [] }) {
       const cumpleLocalidad = filtroLocalidad === 'todos' ||
         (report.localidades?.nombre || '') === filtroLocalidad;
 
-      return cumpleCategoria && cumpleEstado && cumpleBusqueda && cumpleFecha && cumpleLocalidad;
+      return cumpleSoloMisReportes && cumpleCategoria && cumpleEstado && cumpleBusqueda && cumpleFecha && cumpleLocalidad;
     })
     .sort((a, b) => {
       // 5. Ordenamiento dinámico en el cliente
@@ -743,7 +771,8 @@ export default function ReportesClient({ initialReportes = [] }) {
                               filtroFechaInicio !== '' || 
                               filtroFechaFin !== '' || 
                               busqueda !== '' ||
-                              orden !== 'recientes';
+                              orden !== 'recientes' ||
+                              soloMisReportes;
 
   // Contar cantidad de filtros avanzados modificados (Punto 5)
   let cantFiltrosActivos = 0;
@@ -1124,9 +1153,36 @@ export default function ReportesClient({ initialReportes = [] }) {
 
       </div>
 
-      {/* Selector de Vista (Lista / Mapa) */}
-      <div className="flex justify-end mb-4">
-        <div className="bg-gray-100 p-1 rounded-xl flex gap-1 w-52 h-[41px] items-center border border-gray-200/40 shadow-xs">
+      {/* Selector de Filtro de Reportes Propios y Selector de Vista (Lista / Mapa) */}
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4">
+        {/* Pestañas: Todos vs Mis Reportes */}
+        <div className="bg-gray-100 p-1 rounded-xl flex gap-1 flex-1 sm:flex-none sm:w-64 h-[41px] items-center border border-gray-200/40 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setSoloMisReportes(false)}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+              !soloMisReportes
+                ? 'bg-white text-gray-950 shadow-sm border border-gray-200/50'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📋 Todos
+          </button>
+          <button
+            type="button"
+            onClick={() => setSoloMisReportes(true)}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+              soloMisReportes
+                ? 'bg-white text-gray-950 shadow-sm border border-gray-200/50'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            ⭐ Mis Reportes ({misReportesIds.length})
+          </button>
+        </div>
+
+        {/* Selector de Vista */}
+        <div className="bg-gray-100 p-1 rounded-xl flex gap-1 w-full sm:w-52 h-[41px] items-center border border-gray-200/40 shadow-xs">
           <button
             type="button"
             onClick={() => setVista('lista')}
@@ -1170,6 +1226,7 @@ export default function ReportesClient({ initialReportes = [] }) {
               onAmpliarFoto={setFotoAmpliada}
               userSession={userSession}
               onLogin={loginConGoogle}
+              esPropio={misReportesIds.includes(report.id)}
             />
           ))}
         </div>
