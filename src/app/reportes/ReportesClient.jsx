@@ -26,6 +26,102 @@ const CATEGORIAS = {
   otro: { label: 'Otro Problema', icon: '📋' },
 };
 
+function ReporteTimeline({ report }) {
+  const { creado_at, actualizado_at, estado } = report;
+
+  const formatDate = (isoString) => {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  let steps = [];
+  if (estado === 'rechazado') {
+    steps = [
+      { key: 'recibido', label: 'Reporte Recibido ⏳', active: true, date: creado_at, color: 'bg-blue-600 border-blue-100' },
+      { key: 'rechazado', label: 'Reporte Rechazado ❌', active: true, date: actualizado_at, color: 'bg-rose-600 border-rose-100' }
+    ];
+  } else {
+    const isEnProceso = estado === 'en_proceso' || estado === 'resuelto';
+    const isResuelto = estado === 'resuelto';
+
+    steps = [
+      { 
+        key: 'recibido', 
+        label: 'Recibido ⏳', 
+        active: true, 
+        date: creado_at, 
+        color: 'bg-blue-600 border-blue-100' 
+      },
+      { 
+        key: 'en_proceso', 
+        label: 'En Proceso 🛠️', 
+        active: isEnProceso, 
+        date: isEnProceso && estado === 'en_proceso' ? actualizado_at : null, 
+        color: isEnProceso ? 'bg-blue-600 border-blue-100' : 'bg-gray-200 border-gray-100' 
+      },
+      { 
+        key: 'finalizado', 
+        label: 'Resuelto ✅', 
+        active: isResuelto, 
+        date: isResuelto ? actualizado_at : null, 
+        color: isResuelto ? 'bg-emerald-600 border-emerald-100' : 'bg-gray-200 border-gray-100' 
+      }
+    ];
+  }
+
+  return (
+    <div className="py-4 px-3 bg-gray-55/40 rounded-2xl border border-gray-100/70 space-y-2.5">
+      <span className="block font-black text-[10px] text-gray-400 uppercase tracking-wider mb-2 text-left">🚦 Avance de Atención:</span>
+      <div className="relative flex justify-between items-start">
+        {/* Línea conectora de fondo */}
+        <div className="absolute top-3.5 left-[15%] right-[15%] h-0.5 bg-gray-200 -z-0" />
+        {/* Línea conectora activa */}
+        {steps.length > 2 && (
+          <div 
+            className="absolute top-3.5 left-[15%] h-0.5 bg-blue-500 -z-0 transition-all duration-500" 
+            style={{ 
+              width: estado === 'resuelto' ? '70%' : estado === 'en_proceso' ? '35%' : '0%' 
+            }}
+          />
+        )}
+        {steps.length === 2 && (
+          <div className="absolute top-3.5 left-[15%] right-[15%] h-0.5 bg-rose-500 -z-0" />
+        )}
+
+        {/* Pasos */}
+        {steps.map((step, idx) => {
+          const wClass = steps.length === 2 ? 'w-1/2' : 'w-1/3';
+          return (
+            <div key={step.key} className={`flex flex-col items-center text-center relative z-10 ${wClass}`}>
+              {/* Círculo */}
+              <div className={`w-8 h-8 rounded-full border-4 flex items-center justify-center font-black text-xs transition-all ${
+                step.active ? `${step.color} text-white scale-110 shadow-sm` : 'bg-white text-gray-400 border-gray-200'
+              }`}>
+                {idx + 1}
+              </div>
+              {/* Etiqueta */}
+              <span className={`text-[10px] font-black mt-1.5 ${step.active ? 'text-gray-800' : 'text-gray-400'}`}>
+                {step.label}
+              </span>
+              {/* Fecha */}
+              {step.date && (
+                <span className="text-[9px] text-gray-500 font-semibold mt-0.5 leading-none">
+                  {formatDate(step.date)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ReporteCard({ report, onAmpliarFoto, userSession, onLogin, esPropio }) {
   const [expandido, setExpandido] = useState(false);
   const [suscritoPush, setSuscritoPush] = useState(false);
@@ -396,6 +492,9 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin, esPropio }) 
                   <audio src={report.audio_url} controls className="w-full h-8 max-w-[280px]" />
                 </div>
               )}
+
+              {/* Línea de Tiempo de Estatus */}
+              <ReporteTimeline report={report} />
 
               {/* Respuesta oficial de atención */}
               {report.respuesta_ayuntamiento && (
