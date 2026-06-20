@@ -770,6 +770,26 @@ function ReporteAdminCard({ report, localidades, isUpdating, mensaje, onSave, on
                 </div>
               )}
 
+              {/* Retroalimentación Ciudadana */}
+              {report.calificacion !== undefined && report.calificacion !== null && (
+                <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-3.5 space-y-2 mt-2 text-left">
+                  <span className="block font-black text-[9px] text-amber-800 uppercase tracking-wider">⭐ Retroalimentación Ciudadana:</span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star} className={`text-base ${star <= report.calificacion ? 'text-amber-500' : 'text-gray-200'}`}>
+                        ★
+                      </span>
+                    ))}
+                    <span className="text-[10px] font-black text-amber-900 ml-1">({report.calificacion}/5 estrellas)</span>
+                  </div>
+                  {report.comentario_satisfaccion && (
+                    <p className="text-xs text-gray-750 font-semibold italic bg-white p-2.5 rounded-lg border border-gray-150">
+                      "{report.comentario_satisfaccion}"
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Sección de Edición de Estatus */}
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3 mt-3">
                 

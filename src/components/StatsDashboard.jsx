@@ -16,6 +16,12 @@ export default function StatsDashboard({ reportes }) {
   const pctResueltos = total > 0 ? Math.round((resueltos / total) * 100) : 0;
   const pctRechazados = total > 0 ? Math.round((rechazados / total) * 100) : 0;
 
+  // 1.5. Calificación y Satisfacción Promedio
+  const reportesConCalificacion = reportes.filter((r) => r.calificacion !== undefined && r.calificacion !== null);
+  const totalCalificaciones = reportesConCalificacion.length;
+  const sumaCalificaciones = reportesConCalificacion.reduce((acc, curr) => acc + curr.calificacion, 0);
+  const promedioSatisfaccion = totalCalificaciones > 0 ? (sumaCalificaciones / totalCalificaciones).toFixed(1) : '0.0';
+
   // 2. Estadísticas de Categorías
   const CATEGORIAS = {
     bache: { label: 'Bache o Hoyo', icon: '🕳️', color: 'bg-rose-500', barColor: 'bg-rose-500', textColor: 'text-rose-700' },
@@ -43,6 +49,9 @@ export default function StatsDashboard({ reportes }) {
   const radius = 30;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (pctResueltos / 100) * circumference;
+
+  const pctSatisfaccion = totalCalificaciones > 0 ? Math.round((sumaCalificaciones / (totalCalificaciones * 5)) * 100) : 0;
+  const strokeDashoffsetSatisfaccion = circumference - (pctSatisfaccion / 100) * circumference;
 
   return (
     <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-md space-y-6 animate-fade-in">
@@ -96,8 +105,48 @@ export default function StatsDashboard({ reportes }) {
           </div>
         </div>
 
+        {/* Gráfico 1.5: Anillo de Satisfacción Ciudadana */}
+        <div className="bg-gradient-to-br from-amber-50/20 to-yellow-50/20 rounded-2xl p-4 border border-amber-150/20 flex flex-col items-center justify-center text-center space-y-3">
+          <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Satisfacción Ciudadana</span>
+          
+          <div className="relative flex items-center justify-center w-24 h-24">
+            {/* SVG Circular Ring */}
+            <svg className="w-full h-full transform -rotate-90">
+              {/* Background circle */}
+              <circle
+                cx="48"
+                cy="48"
+                r={radius}
+                className="stroke-amber-100"
+                strokeWidth="8"
+                fill="transparent"
+              />
+              {/* Foreground circle */}
+              <circle
+                cx="48"
+                cy="48"
+                r={radius}
+                className="stroke-amber-500 transition-all duration-500 ease-out"
+                strokeWidth="8"
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffsetSatisfaccion}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-xl font-black text-amber-950">{promedioSatisfaccion}</span>
+              <span className="text-[8px] font-black text-amber-700/80 uppercase">★ estrellas</span>
+            </div>
+          </div>
+          
+          <div className="text-[11px] font-bold text-gray-500">
+            Basado en {totalCalificaciones} calificaciones recibidas.
+          </div>
+        </div>
+
         {/* Gráfico 2: Proporción de Estatus (Stacked Bar) */}
-        <div className="md:col-span-2 space-y-4 bg-gray-50/30 border border-gray-100 rounded-2xl p-4 flex flex-col justify-between">
+        <div className="space-y-4 bg-gray-50/30 border border-gray-100 rounded-2xl p-4 flex flex-col justify-between">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Distribución de Estatus</span>
           
           {/* Stacked Segmented Bar */}

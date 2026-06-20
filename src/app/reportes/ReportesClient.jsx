@@ -128,6 +128,40 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin, esPropio }) 
   const [suscribiendoPush, setSuscribiendoPush] = useState(false);
   const [comentariosCount, setComentariosCount] = useState(report.comentarios?.[0]?.count ?? 0);
 
+  // Estados de Calificación del Servicio
+  const [calificacionLocal, setCalificacionLocal] = useState(report.calificacion);
+  const [comentarioLocal, setComentarioLocal] = useState(report.comentario_satisfaccion || '');
+  const [hoverRating, setHoverRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratingInput, setRatingInput] = useState(0);
+
+  const handleEnviarCalificacion = async () => {
+    if (ratingInput < 1 || ratingInput > 5) {
+      alert('Por favor selecciona una calificación de 1 a 5 estrellas.');
+      return;
+    }
+    setSubmittingRating(true);
+    try {
+      const { error } = await supabase
+        .from('reportes')
+        .update({
+          calificacion: ratingInput,
+          comentario_satisfaccion: comentarioLocal.trim() || null
+        })
+        .eq('id', report.id);
+
+      if (error) throw error;
+      setCalificacionLocal(ratingInput);
+      report.calificacion = ratingInput;
+      report.comentario_satisfaccion = comentarioLocal.trim() || null;
+    } catch (err) {
+      console.error('Error al enviar calificación:', err);
+      alert(`No se pudo enviar la calificación: ${err.message || 'Error desconocido'}`);
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   useEffect(() => {
     if (report.id) {
       setSuscritoPush(estaSuscrito(report.id));
@@ -501,6 +535,73 @@ function ReporteCard({ report, onAmpliarFoto, userSession, onLogin, esPropio }) 
                 <div className="text-sm bg-emerald-50 text-emerald-950 p-3.5 rounded-xl border border-emerald-100 space-y-1">
                   <span className="block font-black text-xs text-emerald-800 uppercase tracking-wider">💬 Respuesta Oficial:</span>
                   <p className="font-semibold text-gray-800">{report.respuesta_ayuntamiento}</p>
+                </div>
+              )}
+
+              {/* Calificación del Servicio (Feedback Ciudadano) */}
+              {report.estado === 'resuelto' && (
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2.5 mt-2">
+                  <span className="block font-black text-[10px] text-gray-500 uppercase tracking-wider text-left">⭐ Calificación de Servicio:</span>
+                  
+                  {calificacionLocal ? (
+                    <div className="space-y-1.5 animate-fade-in text-left">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span key={star} className={`text-lg ${star <= calificacionLocal ? 'text-amber-500' : 'text-gray-200'}`}>
+                            ★
+                          </span>
+                        ))}
+                        <span className="text-xs font-black text-gray-700 ml-1">({calificacionLocal}/5)</span>
+                      </div>
+                      {comentarioLocal && (
+                        <p className="text-xs text-gray-650 bg-white p-2.5 rounded-lg border border-gray-150 font-semibold italic">
+                          "{comentarioLocal}"
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 animate-fade-in text-left">
+                      <p className="text-[11px] text-gray-500 font-semibold leading-normal">¿Cómo calificarías la atención de este reporte? Tu opinión es anónima y muy valiosa.</p>
+                      
+                      {/* Selector de estrellas */}
+                      <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRatingInput(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            className="text-2xl transition-all active:scale-125 focus:outline-none cursor-pointer"
+                          >
+                            <span className={`${star <= (hoverRating || ratingInput) ? 'text-amber-400' : 'text-gray-300'}`}>
+                              ★
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Comentario opcional */}
+                      <div className="space-y-1">
+                        <textarea
+                          placeholder="Escribe un comentario opcional sobre la atención..."
+                          value={comentarioLocal}
+                          onChange={(e) => setComentarioLocal(e.target.value)}
+                          rows={2}
+                          className="w-full p-2.5 border border-gray-200 rounded-xl outline-none text-xs font-semibold focus:border-blue-500 bg-white"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={submittingRating || ratingInput === 0}
+                        onClick={handleEnviarCalificacion}
+                        className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black active:scale-95 transition-all shadow-sm shadow-blue-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {submittingRating ? 'Enviando...' : 'Enviar Calificación'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

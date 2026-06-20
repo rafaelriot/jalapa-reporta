@@ -101,3 +101,14 @@ create policy "Permitir eliminación a personal autenticado"
 on public.suscripciones_push for delete
 to authenticated
 using (true);
+
+-- Nuevas columnas para Calificación del Servicio (Feedback Ciudadano)
+alter table public.reportes add column if not exists calificacion int check (calificacion >= 1 and calificacion <= 5);
+alter table public.reportes add column if not exists comentario_satisfaccion text;
+
+-- Política RLS para permitir a los ciudadanos calificar reportes resueltos
+drop policy if exists "Permitir calificación pública de reportes resueltos" on public.reportes;
+create policy "Permitir calificación pública de reportes resueltos" 
+on public.reportes for update 
+using (estado = 'resuelto')
+with check (estado = 'resuelto');
