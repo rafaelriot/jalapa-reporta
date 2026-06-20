@@ -21,11 +21,20 @@ export default function MapComponent({ reportes }) {
       L = leafletModule.default;
 
       if (!mapRef.current && mapContainerRef.current) {
-        // Initialize Map centered on Jalapa, Tabasco
+        // Definir límites de Jalapa, Tabasco (Bounding Box)
+        const jalapaBounds = L.latLngBounds(
+          L.latLng(17.50, -92.95), // Suroeste
+          L.latLng(17.90, -92.65)  // Noreste
+        );
+
+        // Initialize Map centered on Jalapa, Tabasco with bounds constraints
         mapRef.current = L.map(mapContainerRef.current, {
           center: [17.7214, -92.8122],
-          zoom: 14,
-          zoomControl: true
+          zoom: 13,
+          zoomControl: true,
+          maxBounds: jalapaBounds,
+          maxBoundsViscosity: 1.0,
+          minZoom: 10
         });
 
         // Add OpenStreetMap tiles (Voyager Theme)

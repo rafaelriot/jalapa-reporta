@@ -132,6 +132,22 @@ export default function ReportForm({ localidades = [] }) {
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+        
+        // Bounding Box para Jalapa, Tabasco
+        const minLat = 17.50;
+        const maxLat = 17.90;
+        const minLng = -92.95;
+        const maxLng = -92.65;
+
+        if (lat < minLat || lat > maxLat || lng < minLng || lng > maxLng) {
+          setGpsStatus('error');
+          setMensajeStatus({ 
+            tipo: 'error', 
+            texto: `⚠️ Tu ubicación actual (${lat.toFixed(4)}, ${lng.toFixed(4)}) está fuera del municipio de Jalapa, Tabasco. Por favor escribe la dirección y referencias abajo.` 
+          });
+          return;
+        }
+
         setGpsCoords({ lat, lng });
         setGpsStatus('success');
         
